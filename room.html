@@ -8,21 +8,27 @@
 <script>
     let ws = new WebSocket("ws://127.0.0.1:80/connect_room");
     let rid = sessionStorage.getItem("room_id");
+    let uname = "";
+    if (sessionStorage.getItem("yaop_user") == null) {
+        location.href = "/login"
+    } else {
+        uname = JSON.parse(sessionStorage.getItem("yaop_user")).Name;
+    }
     // 发送消息结构
     // id:Int
-    // name:String
+    // name:String 用户名字
     // a:Int 是不是还要继续摸排 0 1
     // s:Int 是不是已经炸掉了 0 1
     // r:Int 准备中 游戏中 0 1
     ws.onopen = function () {
-        console.log("client：打开连接");
+        console.log("client：open connect");
         // 用来寻找用户
         ws.send(JSON.stringify({
-            id: 2,
-            name: Math.random().toString(),
-            a: 0,
-            s: 0,
-            r: 0
+            Id: parseInt(rid),
+            Name: uname,
+            A: 0,
+            S: 0,
+            R: 0
         }));
     };
 
@@ -42,7 +48,7 @@
         console.log(msg);
     };
     ws.onclose = function (params) {
-        console.log("client：关闭连接");
+        console.log("client：close connect");
     };
 </script>
 </body>

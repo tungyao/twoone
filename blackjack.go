@@ -133,6 +133,25 @@ func Start() {
 		}
 		writer.WriteHeader(503)
 	}, nil)
+	// 获取用户个人信息 用 token来换取 临时
+	r.Post("/login_after", func(writer http.ResponseWriter, request *http.Request) {
+		user := &User{}
+		obj, err := READJSON(request)
+		if err != nil {
+			log.Println(err)
+			writer.WriteHeader(503)
+			return
+		}
+		x := GetSession([]byte(obj["token"].(string)))
+		JsonDecode(user, x)
+		d, err := json.Marshal(user)
+		if err != nil {
+			log.Println(err)
+			writer.WriteHeader(503)
+			return
+		}
+		writer.Write(d)
+	}, nil)
 	r.Get("/register", func(writer http.ResponseWriter, request *http.Request) {
 		TEMPLATE(writer, "./blackjack/register.html")
 	}, nil)
@@ -218,9 +237,11 @@ func webSocket(ws *websocket.Conn) {
 			log.Println(err)
 			break
 		}
+		fmt.Println(reply)
 		err = json.Unmarshal([]byte(reply), &ups)
 		if err != nil {
 			log.Println("解析数据异常")
+			break
 		}
 		if Rooms[ups.Id] == nil {
 			Rooms[ups.Id] = make(map[string]*websocket.Conn)

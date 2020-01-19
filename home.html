@@ -14,6 +14,7 @@
     function create_room() {
         if (!cl) {
             location.href="/login";
+            return
         }
         axios.post("/create_room",{session_token:sessionStorage.getItem("session_token")}).then(d=>{
             alert("创建成功");

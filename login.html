@@ -26,7 +26,11 @@
             if (d.status === 200) {
                 sessionStorage.setItem("session_token", d.data);
             }
-            location.href="/";
+            axios.post("/login_after",{token:d.data}).then(d => {
+                console.log(d);
+                sessionStorage.setItem("yaop_user", JSON.stringify(d.data))
+            });
+            location.href = "/";
         }).catch(() => {
             alert("登录失败")
         })
