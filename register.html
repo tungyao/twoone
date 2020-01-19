@@ -33,9 +33,10 @@
             email: document.getElementById("email").value,
             pwd: document.getElementById("pwd").value
         }).then(d => {
-            console.log(d);
-        }).catch(() => {
-            alert("注册失败")
+            alert("注册成功");
+            location.href = "/login"
+        }).catch((d) => {
+            alert("注册失败：用户名或者邮箱已经被使用了")
         })
     }
 

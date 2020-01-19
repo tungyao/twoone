@@ -6,6 +6,23 @@
     <script src="/static/axios.min.js"></script>
 </head>
 <body>
-
+现在正在进行的游戏
+<button onclick="create_room()">创建房间</button>
 </body>
+<script>
+    let cl  = sessionStorage.getItem("session_token") !== null;
+    function create_room() {
+        if (!cl) {
+            location.href="/login";
+        }
+        axios.post("/create_room",{session_token:sessionStorage.getItem("session_token")}).then(d=>{
+            alert("创建成功");
+            location.href ="/room?id="+d.data;
+            sessionStorage.setItem("room_id",d.data);
+        }).catch(()=>{
+            console.log("error");
+        })
+    }
+
+</script>
 </html>

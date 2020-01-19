@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>房间</title>
+</head>
+<body>
+<script>
+    let ws = new WebSocket("ws://127.0.0.1:80/connect_room");
+    let rid = sessionStorage.getItem("room_id");
+    // 发送消息结构
+    // id:Int
+    // name:String
+    // a:Int 是不是还要继续摸排 0 1
+    // s:Int 是不是已经炸掉了 0 1
+    // r:Int 准备中 游戏中 0 1
+    ws.onopen = function () {
+        console.log("client：打开连接");
+        // 用来寻找用户
+        ws.send(JSON.stringify({
+            id: 2,
+            name: Math.random().toString(),
+            a: 0,
+            s: 0,
+            r: 0
+        }));
+    };
+
+    ws.onmessage = function (e) {
+        let msg = null;
+        console.log(e);
+        // if (e.isTrusted) {
+        //     msg = JSON.parse(e.data)
+        // }
+        // 房间是没有人数限制
+        // msg 包含所有的房间消息
+        // type 0 系统发牌 1 结算结果
+        // id 房间id
+        // status 0 房间关闭 1 房间正常
+        // people 房间现在多少人
+        // data 如果是发牌则是 a:Int 如果是结算 winner:String
+        console.log(msg);
+    };
+    ws.onclose = function (params) {
+        console.log("client：关闭连接");
+    };
+</script>
+</body>
+</html>

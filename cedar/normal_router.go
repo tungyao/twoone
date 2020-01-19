@@ -59,7 +59,6 @@ func (mux *Trie) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if handf != nil {
 		handf(w, r)
 	}
-
 }
 
 func (mux *Trie) Group(path string, fn func(groups *Groups)) {

@@ -24,8 +24,9 @@
             pwd: document.getElementById("pwd").value
         }).then(d => {
             if (d.status === 200) {
-                sessionStorage.setItem("session_tokne", d.data);
+                sessionStorage.setItem("session_token", d.data);
             }
+            location.href="/";
         }).catch(() => {
             alert("登录失败")
         })
