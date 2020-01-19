@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>注册</title>
+    <script src="/static/axios.js"></script>
+</head>
+<body>
+<form>
+    <label>用户名（唯一）
+        <input id="name" name="yaop_name" type="text" placeholder="用户名">
+    </label><label>用户名 （用于找回密码）
+        <input id="email" name="yaop_email" type="email" placeholder="邮箱地址">
+    </label>
+    <!--<label>验证码
+        <input id="code" type="code" placeholder="邮箱接收的验证码" onchange="auth_code(this)">
+    </label>-->
+    <label>密码
+        <input id="pwd" name="yaop_pwd" type="password" placeholder="密码">
+    </label>
+</form>
+<button onclick="login()">提交</button>
+
+</body>
+<script>
+    function auth_code(x) {
+        console.log(x.value);
+    }
+
+    function login() {
+        axios.post("/register_it", {
+            name: document.getElementById("name").value,
+            email: document.getElementById("email").value,
+            pwd: document.getElementById("pwd").value
+        }).then(d => {
+            console.log(d);
+        }).catch(() => {
+            alert("注册失败")
+        })
+    }
+
+</script>
+</html>

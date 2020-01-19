@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <script src="/static/axios.js"></script>
+</head>
+<body>
+<form>
+    <label>用户名
+        <input id="name" name="yaop_name" type="text" placeholder="用户名">
+    </label>
+    <label>密码
+        <input id="pwd" name="yaop_pwd" type="password" placeholder="密码">
+    </label>
+</form>
+<button onclick="login()">提交</button>
+
+</body>
+<script>
+    function login() {
+        axios.post("/login_it", {
+            name: document.getElementById("name").value,
+            pwd: document.getElementById("pwd").value
+        }).then(d => {
+            if (d.status === 200) {
+                sessionStorage.setItem("session_tokne", d.data);
+            }
+        }).catch(() => {
+            alert("登录失败")
+        })
+    }
+
+</script>
+</html>
