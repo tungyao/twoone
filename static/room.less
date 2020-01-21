@@ -1,0 +1,29 @@
+.container {
+  display: flex;
+  width: 100%;
+  flex-flow: row nowrap;
+
+  & > .left {
+    width: 70%;
+
+    & > .banker {
+      background-color: aquamarine;
+
+      height: 300px;
+    }
+
+    & > .player {
+      background-color: darkgoldenrod;
+      height: 300px;
+    }
+  }
+
+  & > .right-rank {
+    width: 20%;
+    background-color: cadetblue;
+  }
+  &>.right-msg{
+    width: 25%;
+    background-color: wheat;
+  }
+}

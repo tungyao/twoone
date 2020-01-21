@@ -12,9 +12,11 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -38,9 +40,16 @@ func READJSON(r *http.Request) (map[string]interface{}, error) {
 }
 
 var (
-	D  *sql.DB
-	C  *spruce.Slot
-	Se *spruce.Hash
+	D           *sql.DB
+	C           *spruce.Slot
+	Se          *spruce.Hash
+	randomMutex sync.Mutex
+)
+
+var (
+	Rooms = make([]map[string]*websocket.Conn, 1024)
+
+	Branker = make(map[string]string) // 这个是庄家的牌 每个庄家对应一个玩家
 )
 
 func init() {
@@ -216,41 +225,128 @@ func Start() {
 	}
 }
 
-var (
-	Rooms = make([]map[string]*websocket.Conn, 1024)
-)
-
 type UpS struct {
 	Id   int
 	Name string
 	A    int
 	S    int
-	r    int
+	R    int
+}
+type Smsg struct {
+	Id         int    `房间ID`
+	Msg        string `消息提示`
+	Type       int    `发牌1 2 结算3`
+	Status     int    `房间状态`
+	User       string `庄家标识`
+	People     int    `当前房间多少人`
+	Data       string `如果type是发牌 则是携带的 牌 ，反之则是结果`
+	SelfStatus int    `自身状态` // -1 是等待 0 是死亡 1是继续
+}
+type BrankMsg struct {
+	Id   int    `房间ID`
+	Type int    `发牌1 2 结算3`
+	User string `庄家标识`
+	Data string `如果type是发牌 则是携带的 牌 ，反之则是结果`
 }
 
+func DoSend(ws *websocket.Conn, msg interface{}) {
+	if err := websocket.JSON.Send(ws, msg); err != nil {
+		log.Println(err)
+	}
+}
 func webSocket(ws *websocket.Conn) {
 	var err error
+	ups := UpS{}
 	for {
-		var reply string // get msg
-		ups := UpS{}
-		if err = websocket.Message.Receive(ws, &reply); err != io.EOF && err != nil {
+		if err = websocket.JSON.Receive(ws, &ups); err != nil {
 			log.Println(err)
 			break
 		}
-		fmt.Println(reply)
-		err = json.Unmarshal([]byte(reply), &ups)
-		if err != nil {
-			log.Println("解析数据异常")
-			break
-		}
+		fmt.Println("get msg:", ups)
 		if Rooms[ups.Id] == nil {
 			Rooms[ups.Id] = make(map[string]*websocket.Conn)
 		}
 		if k := Rooms[ups.Id][ups.Name]; k == nil {
 			Rooms[ups.Id][ups.Name] = ws
 		}
-		for _, v := range Rooms[ups.Id] {
-			websocket.Message.Send(v, "asd")
+		for k, v := range Rooms[ups.Id] {
+			msg := &Smsg{}
+			msg.Id = ups.Id
+			msg.People = len(Rooms[ups.Id])
+			if ups.R == 1 { // 游戏中
+				msg.Status = ups.R
+				if ups.S == 1 {
+					if k != ups.Name {
+						msg.Msg = "玩家：" + ups.Name + " 出局"
+					} else {
+						msg.Msg = "你已经出局"
+					}
+					msg.Type = 3
+					msg.Data = "you out"
+					msg.SelfStatus = 0
+					if v == nil {
+						v.Close()
+						delete(Rooms[ups.Id], k)
+						return
+					}
+					go DoSend(v, msg)
+				} else {
+					if k == ups.Name {
+						if ups.A == 1 { // 继续摸牌
+							msg.Data = GetRandomInt(1, 10)
+							msg.Type = 1
+							msg.SelfStatus = 1
+						} else if ups.A == 2 { // 首次拿牌
+							oc := GetRandomInt(1, 10)
+							ot := GetRandomInt(1, 10)
+							Branker[ups.Name] = oc + ot
+							go DoSend(v, &BrankMsg{
+								Id:   ups.Id,
+								Type: 2,
+								User: "brank_is_god",
+								Data: `["` + oc + `","` + ot + `"]`,
+							})
+							msg.Data = `["` + GetRandomInt(1, 10) + `","` + GetRandomInt(1, 10) + `"]`
+							msg.Type = 2
+							msg.SelfStatus = 1
+						}
+						if v == nil {
+							v.Close()
+							delete(Rooms[ups.Id], k)
+							return
+						}
+						go DoSend(v, msg)
+					}
+				}
+			} else { // 游戏还没开始 或者等待中 下一轮玩家可以等待至下一轮
+				msg.Status = ups.R
+				msg.Msg = "玩家：" + ups.Name + " 加入房间"
+				msg.Type = 0
+				msg.Data = "0"
+				msg.SelfStatus = -1
+				if v == nil {
+					v.Close()
+					delete(Rooms[ups.Id], k)
+					return
+				}
+				go DoSend(v, msg)
+			}
 		}
 	}
+}
+func GetRandomInt(start, end int) string {
+	//访问加同步锁，是因为并发访问时容易因为时间种子相同而生成相同的随机数，那就狠不随机鸟！
+	randomMutex.Lock()
+
+	//利用定时器阻塞1纳秒，保证时间种子得以更改
+	<-time.After(1 * time.Nanosecond)
+
+	//根据时间纳秒（种子）生成随机数对象
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	//得到[start,end]之间的随机数
+	n := start + r.Intn(end-start+1)
+
+	//释放同步锁，供其它协程调用
+	randomMutex.Unlock()
+	return strconv.Itoa(n)
 }

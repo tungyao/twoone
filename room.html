@@ -3,12 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>房间</title>
+    <script src="static/render.js"></script>
+    <link rel="stylesheet" href="static/room.css">
 </head>
 <body>
+<div class="container">
+    <div class="left">
+        <div class="banker">庄家
+            <div id="BRANKPAI"></div>
+        </div>
+        <div class="player">玩家
+            <div id="PAI"></div>
+            <button onclick="start()" id="BUTTON">拿牌</button>
+        </div>
+    </div>
+    <div class="right-msg">消息区
+        <div id="MSG">
+        </div>
+        <h4 class="now_people" render-obj="data" style="bottom: 0">当前房间人数：{item.n}</h4>
+    </div>
+    <div class="right-rank">排名区</div>
+</div>
+<!--
+<div id="MSG"></div>
+<div id="PAI"></div>
+<button onclick="start()" id="BUTTON">拿牌</button>-->
 <script>
     let ws = new WebSocket("ws://127.0.0.1:80/connect_room");
-    let rid = sessionStorage.getItem("room_id");
+    let globalN = 0; // 计算现在是多少牌
+    let status = true; // 现在是什么状态
+    let one = true; // 是不是第一次拿牌
+    let rid = sessionStorage.getItem("room_id"); // 获取在第那个房间
+    let rank = []; // 当前房间的排名
     let uname = "";
+    let brank = 0;
+    let nsm =  NewRender("#MSG");
+    let now_people = NewRender(".now_people");
     if (sessionStorage.getItem("yaop_user") == null) {
         location.href = "/login"
     } else {
@@ -17,7 +47,7 @@
     // 发送消息结构
     // id:Int
     // name:String 用户名字
-    // a:Int 是不是还要继续摸排 0 1
+    // a:Int 是不是还要继续摸排 0 1 2
     // s:Int 是不是已经炸掉了 0 1
     // r:Int 准备中 游戏中 0 1
     ws.onopen = function () {
@@ -34,7 +64,50 @@
 
     ws.onmessage = function (e) {
         let msg = null;
-        console.log(e);
+        msg = JSON.parse(e.data);
+        now_people.obj({data: {n: msg.People}});
+        console.log(msg);
+        let prefix = "";
+        if (msg.Msg !== "" && msg.Msg) {
+            nsm.append(`<h5>${msg.Msg}</h5>`);
+        }
+        if (msg.User === "brank_is_god") {
+            // brank = JSON.parse(msg.Data);
+            prefix = "BRANK";
+        }
+        if (msg.Type === 2) {
+            let d = JSON.parse(msg.Data);
+            for (let i of d) {
+                if (prefix === "BRANK") {
+                    brank += parseInt(i);
+                    document.getElementById(prefix + "PAI").append(`${i}`)
+                } else {
+                    globalN += parseInt(i);
+                    document.getElementById("PAI").append(`${i}`)
+                }
+            }
+        } else if (msg.Type === 1) {
+            if (prefix === "BRANK") {
+                brank += parseInt(msg.Data)
+                document.getElementById(prefix + "PAI").append(`${msg.Data}`)
+            } else {
+                globalN += parseInt(msg.Data);
+                document.getElementById("PAI").append(`${msg.Data}`)
+            }
+        }
+        if (globalN > 21 && status) {
+            status = false;
+            ws.send(JSON.stringify({
+                Id: parseInt(rid),
+                Name: uname,
+                A: 0,
+                S: 1,
+                R: 1
+            }));
+            document.getElementById("BUTTON").onclick = restart;
+            document.getElementById("BUTTON").innerText = "重新开始";
+            document.getElementById("PAI").innerHTML = "";
+        }
         // if (e.isTrusted) {
         //     msg = JSON.parse(e.data)
         // }
@@ -45,11 +118,48 @@
         // status 0 房间关闭 1 房间正常
         // people 房间现在多少人
         // data 如果是发牌则是 a:Int 如果是结算 winner:String
-        console.log(msg);
+        // selfStatus 0 1
+        // console.log(msg);
     };
     ws.onclose = function (params) {
         console.log("client：close connect");
     };
+
+    function restart() {
+        globalN = 0;
+        status = true;
+        one = true;
+        document.getElementById("BUTTON").onclick = start;
+        document.getElementById("BUTTON").innerText = "拿牌";
+    }
+
+    function start() {
+        if (status) {
+            if (one) {
+                ws.send(JSON.stringify({
+                    Id: parseInt(rid),
+                    Name: uname,
+                    A: 2,
+                    S: 0,
+                    R: 1
+                }));
+                one = false;
+            } else {
+                ws.send(JSON.stringify({
+                    Id: parseInt(rid),
+                    Name: uname,
+                    A: 1,
+                    S: 0,
+                    R: 1
+                }));
+            }
+        }
+    }
+
+    function newMsg(s) {
+
+    }
 </script>
+
 </body>
 </html>

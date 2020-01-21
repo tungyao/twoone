@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"golang.org/x/net/websocket"
 	"html/template"
+	"math/rand"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func upper(ws *websocket.Conn) {
@@ -55,4 +57,10 @@ func TestR(t *testing.T) {
 	//	})
 	//})
 	//http.ListenAndServe(":80", r)
+}
+func TestABC(t *testing.T) {
+	t.Log(CreateCaptcha())
+}
+func CreateCaptcha() string {
+	return fmt.Sprintf("%08v", rand.New(rand.NewSource(time.Now().UnixNano())).Int31n(100000000))
 }

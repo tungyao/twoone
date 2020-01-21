@@ -8,9 +8,19 @@
 <body>
 现在正在进行的游戏
 <button onclick="create_room()">创建房间</button>
+<input type="number" id="room_id">
+<button onclick="join_room()">创建房间</button>
 </body>
 <script>
     let cl  = sessionStorage.getItem("session_token") !== null;
+    function join_room() {
+        if (!cl) {
+            location.href="/login";
+            return
+        }
+        sessionStorage.setItem("room_id",document.getElementById("room_id").value);
+        location.href ="/room?id="+document.getElementById("room_id").value;
+    }
     function create_room() {
         if (!cl) {
             location.href="/login";
