@@ -262,6 +262,7 @@ func webSocket(ws *websocket.Conn) {
 			log.Println(err)
 			break
 		}
+		defer ws.Close()
 		fmt.Println("get msg:", ups)
 		if Rooms[ups.Id] == nil {
 			Rooms[ups.Id] = make(map[string]*websocket.Conn)
@@ -280,6 +281,8 @@ func webSocket(ws *websocket.Conn) {
 						msg.Msg = "玩家：" + ups.Name + " 出局"
 					} else {
 						msg.Msg = "你已经出局"
+						fmt.Println(Branker[ups.Name])
+						Branker[ups.Name] = ""
 					}
 					msg.Type = 3
 					msg.Data = "you out"
@@ -299,7 +302,7 @@ func webSocket(ws *websocket.Conn) {
 						} else if ups.A == 2 { // 首次拿牌
 							oc := GetRandomInt(1, 10)
 							ot := GetRandomInt(1, 10)
-							Branker[ups.Name] = oc + ot
+							Branker[ups.Name] = oc + "," + ot
 							go DoSend(v, &BrankMsg{
 								Id:   ups.Id,
 								Type: 2,
@@ -309,6 +312,8 @@ func webSocket(ws *websocket.Conn) {
 							msg.Data = `["` + GetRandomInt(1, 10) + `","` + GetRandomInt(1, 10) + `"]`
 							msg.Type = 2
 							msg.SelfStatus = 1
+						} else if ups.A == 0 { //停止拿牌
+
 						}
 						if v == nil {
 							v.Close()

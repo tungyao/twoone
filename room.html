@@ -15,6 +15,8 @@
         <div class="player">玩家
             <div id="PAI"></div>
             <button onclick="start()" id="BUTTON">拿牌</button>
+            <button onclick="stop()" id="STOP">停牌</button>
+            <button onclick="close()" id="CLOSE">断开连接</button>
         </div>
     </div>
     <div class="right-msg">消息区
@@ -158,6 +160,19 @@
 
     function newMsg(s) {
 
+    }
+    // 停止拿牌
+    function stop() {
+        ws.send(JSON.stringify({
+            Id: parseInt(rid),
+            Name: uname,
+            A: 0,
+            S: 0,
+            R: 1
+        }));
+    }
+    function close() {
+        ws.close()
     }
 </script>
 
